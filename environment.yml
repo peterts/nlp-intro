@@ -1,0 +1,15 @@
+name: nlp-intro
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - pandas
+  - jupyterlab
+  - rise
+  - scikit-learn
+  - ipywidgets
+  - plotly>=4.0.0
+  - pip:
+      - shapely
