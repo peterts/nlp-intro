@@ -18,16 +18,17 @@ def update_weights(w, X, y, lr):
     return w - lr * gradient(w, X, y)
 
 
-def fit(X, y, lr=.1, fit_intercept=True, w=None, max_iter=100, tol=1e-3, verbose=True):
+def fit(X, y, lr=.1, add_intercept=True, w=None, max_iter=100, tol=1e-3, callback=None):
     X = np.asarray(X)
     if X.ndim == 1:
         X = np.expand_dims(X, axis=1)
-    y = np.expand_dims(y, axis=1)
+    if y.ndim == 1:
+        y = np.expand_dims(y, axis=1)
     if w is not None:
         w = np.asarray(w)
 
     # Add intercept to data
-    if fit_intercept:
+    if add_intercept:
         const = np.ones((X.shape[0], 1))
         X = np.hstack([X, const])
 
@@ -40,8 +41,8 @@ def fit(X, y, lr=.1, fit_intercept=True, w=None, max_iter=100, tol=1e-3, verbose
     # Fit weights using gradient descent
     for i in range(max_iter):
         grad = gradient(w, X, y)
-        if verbose:
-            print(f"Weights: {w}, Gradient: {grad}")
+        if callback:
+            callback(i, w, grad)
         w = w - lr * grad
 
     return w

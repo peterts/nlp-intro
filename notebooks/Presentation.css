@@ -1,0 +1,8 @@
+html, body {
+    width: 100%;
+}
+
+table.dataframe {
+    margin: 0 auto;
+    font-size: 150%;
+}
