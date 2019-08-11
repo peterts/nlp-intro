@@ -3,7 +3,8 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.6  # We will need to use this python version as spacy < 2.0.10 does not support python 3.7+
+  - pip
   - numpy
   - pandas
   - jupyterlab
@@ -12,3 +13,13 @@ dependencies:
   - ipywidgets
   - plotly>=4.0.0
   - shapely
+  - beautifulsoup4
+  - requests
+  - psutil
+  - spacy<2.0.10  # < 2.0.10 necessary to use the norwegian experimental model (listed in pip req below)
+  - gensim
+  - pip:
+      - skift
+      # Norwegian experimental model for spacy
+      - https://github.com/ohenrik/nb_news_ud_sm/raw/master/packaged_models/nb_core_sm_v2/nb_core_news_sm-1.0.0/dist/nb_core_news_sm-1.0.0.tar.gz
+      - git+https://github.com/aboSamoor/polyglot.git

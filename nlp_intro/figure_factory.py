@@ -5,6 +5,8 @@ from shapely.ops import split
 from nlp_intro.data import draw_uniform_data
 from nlp_intro.logistic_regression import logistic_func, fit
 from copy import deepcopy
+from sklearn.metrics import confusion_matrix
+
 
 COLOR_GRAY = (128, 128, 128)
 
@@ -222,3 +224,28 @@ def gradient_descent_animation(x_range, y_range, w_real, class_names, inv_class_
 
 def predict_with_logistic_func(w, X):
     return (logistic_func(w, X) > .5).astype(int)
+
+
+def create_confusion_matrix_fig(labels, labels_pred, colorscale='Greens'):
+    """
+    Create a confusion matrix figure with Plotly
+
+    Args:
+        labels (numpy.array): Real labels
+        labels_pred (numpy.array): Prediction labels
+        colorscale: Plotly color scale to use
+
+    Returns:
+        dict: Plotly figure spec
+    """
+    cm = confusion_matrix(labels, labels_pred)
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    labels_unq = ["class " + str(l) if not isinstance(l, str) else l for l in np.unique(labels)]
+    data = [
+        go.Heatmap(x=labels_unq, y=labels_unq, z=cm[::-1], colorscale=colorscale, reversescale=True)
+    ]
+    layout = dict(
+        width=1000, height=1000,
+        title="Confusion Matrix"
+    )
+    return dict(data=data, layout=layout)

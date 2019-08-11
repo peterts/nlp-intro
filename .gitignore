@@ -111,3 +111,6 @@ venv.bak/
 # Jupyter
 **/.ipynb_checkpoints
 
+
+# Scraped data
+data/
