@@ -3,6 +3,12 @@ from sklearn.exceptions import NotFittedError
 from gensim.models.phrases import Phrases, Phraser
 from spacy.lang.nb import Norwegian
 import functools
+from nlp_intro.my_multiprocessing import process
+
+
+SPACY_PIPELINE = Norwegian()
+sentencizer = SPACY_PIPELINE.create_pipe("sentencizer")
+SPACY_PIPELINE.add_pipe(sentencizer)
 
 
 class GensimNgramMixin:
@@ -10,13 +16,13 @@ class GensimNgramMixin:
     Modifies the functionality of a CountVectorizer or TfidifVectorizer, to use gensim for n-gram generation
     rather than the built in generation
     """
-    def __init__(self, phrases_common_terms=None, phrases_min_count=5, phrases_threshold=1, *args, **kwargs):
+    def __init__(self, phrases_common_terms=None, phrases_min_count=5, phrases_threshold=1, n_jobs=-1, *args, **kwargs):
         self.phrases = functools.partial(
             Phrases, min_count=phrases_min_count, threshold=phrases_threshold, common_terms=phrases_common_terms
         )
+        self.phrases_common_terms = phrases_common_terms
         super().__init__(*args, **kwargs)
-        self.nlp_pipeline = Norwegian()
-        self.nlp_pipeline.add_pipe(self.nlp_pipeline.create_pipe("sentencizer"))
+        self.n_jobs = n_jobs
         self.phrasers_ = None
 
     def fit(self, raw_documents, y=None):
@@ -45,14 +51,13 @@ class GensimNgramMixin:
         stop_words = self.get_stop_words()
         self._check_stop_words_consistency(stop_words, preprocess, tokenize)
 
-        document_sentences = []
-        for doc in raw_documents:
+        def tokenize_doc(doc):
             doc = preprocess(self.decode(doc))
-            doc = self.nlp_pipeline(doc).sents
+            doc = SPACY_PIPELINE(doc).sents
             doc = [tokenize(str(sent)) for sent in doc]
-            document_sentences.append(doc)
+            return doc
 
-        return document_sentences
+        return process(tokenize_doc, raw_documents, self.n_jobs)
 
     def _fit_phrasers(self, documents_sentences):
         min_n, max_n = self.ngram_range
@@ -75,14 +80,14 @@ class GensimNgramMixin:
         min_n, max_n = self.ngram_range
         stop_words = self.get_stop_words()
 
-        def _sub_tokens(token):
+        def sub_tokens(token):
             if token in stop_words:
                 return []
             if "_" not in token:
                 if min_n == 1:
                     return [token]
                 return []
-            words = [w for w in token.split("_") if w not in stop_words]
+            words = [w for w in token.split("_") if w not in self.phrases_common_terms]
             sub_tokens = []
             if min_n == 1:
                 sub_tokens.extend(words)
@@ -90,10 +95,10 @@ class GensimNgramMixin:
                 sub_tokens.append(token)
             return sub_tokens
 
-        documents_tokens = [[sub_token for sentence in doc for token in sentence for sub_token in _sub_tokens(token)]
-                            for doc in documents_sentences]
+        def extract_all_tokens(doc):
+            return [sub_token for sentence in doc for token in sentence for sub_token in sub_tokens(token)]
 
-        return documents_tokens
+        return process(extract_all_tokens, documents_sentences, self.n_jobs)
 
     def get_stop_words(self):
         stop_words = super().get_stop_words()

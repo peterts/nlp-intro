@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+project_path = str(Path(__file__).resolve().parents[1])
+if project_path not in sys.path:
+    sys.path.insert(0, project_path)
+
 import requests
 from bs4 import BeautifulSoup
 import bs4.element
@@ -8,29 +15,26 @@ import json
 from time import time
 from datetime import datetime
 import re
+from nlp_intro.my_multiprocessing import process
 
 
 MAIN_PAGE_URL = "https://www.diskusjon.no"
 INDEX_PAGE_URL = "https://www.diskusjon.no/index.php"
 BATCH_SIZE = 100
-DATA_DIR = Path(__file__).parents[1] / "data" / "diskusjonno"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "diskusjonno"
 DATA_FILE = DATA_DIR / "posts.jsonl"
 SCRAPED_TOPICS_IDS_FILE = DATA_DIR / "scraped_topics_ids.txt"
 N_WORKERS = psutil.cpu_count(logical=False)
 SKIP_FORUMS = [re.compile(r".*\(snarvei\)$"), "Forumarkiv"]
 
 
-def scrape(n_per_topic=100, multiprocess=True):
+def scrape(n_per_topic=100, n_jobs=-1):
     topic_generator = _scrape_topic_ids_and_labels(n_per_topic)
     while 1:
         print(f"Scraping next batch ", end="")
         topics_batch = _next_batch(topic_generator, BATCH_SIZE)
         t0 = time()
-        if multiprocess:
-            with Pool(processes=N_WORKERS) as pool:
-                posts = pool.map(_scrape_first_post_from_topic, topics_batch)
-        else:
-            posts = [_scrape_first_post_from_topic(tl) for tl in topics_batch]
+        posts = process(_scrape_first_post_from_topic, topics_batch, n_jobs)
         n_posts = len(posts)
         print(f"[{n_posts} posts scraped in {time()-t0:.2f} seconds]")
         if n_posts:
