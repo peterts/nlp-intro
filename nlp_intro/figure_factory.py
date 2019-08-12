@@ -6,6 +6,8 @@ from nlp_intro.data import draw_uniform_data
 from nlp_intro.logistic_regression import logistic_func, fit
 from copy import deepcopy
 from sklearn.metrics import confusion_matrix
+import plotly.io as pio
+from IPython.display import Image
 
 
 COLOR_GRAY = (128, 128, 128)
@@ -249,3 +251,7 @@ def create_confusion_matrix_fig(labels, labels_pred, colorscale='Greens'):
         title="Confusion Matrix"
     )
     return dict(data=data, layout=layout)
+
+
+def plot_as_image(fig):
+    return Image(pio.to_image(fig, format='png'))
