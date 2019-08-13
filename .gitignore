@@ -114,3 +114,10 @@ venv.bak/
 
 # Scraped data
 data/
+
+# Word embeddings
+resources/embeddings
+
+# Misc notebooks
+notebooks/Scratch.ipynb
+notebooks/Docvec.ipynb
