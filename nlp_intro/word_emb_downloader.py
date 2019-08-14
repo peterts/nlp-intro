@@ -3,6 +3,7 @@ import requests
 # w2v_model.save_word2vec_format("../resources/embeddings/model.bin", binary=True)
 
 
+
 def download_file(url):
     local_filename = url.split('/')[-1]
     # NOTE the stream=True parameter below

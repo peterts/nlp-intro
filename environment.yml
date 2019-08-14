@@ -21,8 +21,12 @@ dependencies:
   - gensim
   - plotly-orca
   - pathos
+  - matplotlib
   - pip:
       - skift
+      - sklearn-pandas
+      - scattertext
+      - wordcloud
+      - termcolor
       # Norwegian experimental model for spacy
       - https://github.com/ohenrik/nb_news_ud_sm/raw/master/packaged_models/nb_core_sm_v2/nb_core_news_sm-1.0.0/dist/nb_core_news_sm-1.0.0.tar.gz
-      - git+https://github.com/aboSamoor/polyglot.git

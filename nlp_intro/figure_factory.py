@@ -8,6 +8,15 @@ from copy import deepcopy
 from sklearn.metrics import confusion_matrix
 import plotly.io as pio
 from IPython.display import Image
+from collections import Counter
+import re
+from random import sample, seed
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import Normalizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.manifold import TSNE
+from sklearn.cluster import DBSCAN
+from ipywidgets import Output, VBox
 
 
 COLOR_GRAY = (128, 128, 128)
@@ -255,3 +264,133 @@ def create_confusion_matrix_fig(labels, labels_pred, colorscale='Greens'):
 
 def plot_as_image(fig):
     return Image(pio.to_image(fig, format='png'))
+
+
+def create_word_embeddings_fig_from_texts(texts, embedding_model, sample_size=None, min_word_count=10, random_seed=None,
+                                          layout=None, cluster=True, cluster_eps=2, cluster_min_samples=10):
+
+    word_counts = _count_all_words_with_embeddings(texts, embedding_model)
+    words = _filter_sparse_words(word_counts, min_word_count)
+    words = _sample(words, sample_size, random_seed)
+    words_embs = [embedding_model[w] for w in words]
+
+    X = TSNE(n_components=2, random_state=random_seed).fit_transform(words_embs)
+    labels = [0] * len(X)
+
+    if cluster:
+        dbs = DBSCAN(eps=cluster_eps, min_samples=cluster_min_samples)
+        dbs.fit(X)
+        ix = dbs.labels_ >= 0
+        X = X[ix]
+        words = np.asarray(words)[ix]
+        labels = dbs.labels_[ix]
+
+    return _create_tsne_word_embs_fig(X, words, labels, layout)
+
+
+def create_word_embeddings_fig_from_words(words, embedding_model, n_most_similar=50, random_seed=None, layout=None):
+    word_embs = []
+    words_ext = []
+    labels = []
+    for i, word in enumerate(words):
+        if word not in embedding_model:
+            print(f"No embedding found for {word}")
+        most_similar_words, _ = zip(*embedding_model.most_similar(word, topn=n_most_similar))
+        _words_ext = [word] + list(most_similar_words)
+        _word_embs = [embedding_model[w] for w in _words_ext]
+        word_embs.extend(_word_embs)
+        words_ext.extend(_words_ext)
+        labels.extend([i] * (n_most_similar+1))
+
+    X = TSNE(n_components=2, random_state=random_seed).fit_transform(word_embs)
+    return _create_tsne_word_embs_fig(X, words_ext, labels, layout)
+
+
+def _create_tsne_word_embs_fig(X, words, labels, layout):
+    x, y = X.T
+    data = [
+        go.Scatter(x=x, y=y, mode="markers+text", textposition="top center", text=words, marker=dict(color=labels))
+    ]
+    if layout is None:
+        layout = dict(width=1000, height=800)
+    return go.Figure(data=data, layout=layout)
+
+
+def _count_all_words_with_embeddings(texts, embedding_model):
+    counter = Counter()
+    for text in texts:
+        words_with_embeddings = [
+            word for word in re.findall(r"[^\W_]+", text) if word in embedding_model]
+        counter.update(words_with_embeddings)
+    return counter
+
+
+def _filter_sparse_words(word_counts, min_count):
+    if min_count is None:
+        min_count = 0
+    return [w for w in word_counts if word_counts[w] >= min_count]
+
+
+def _sample(_list, sample_size, random_seed):
+    if sample_size is not None:
+        if random_seed is not None:
+            seed(random_seed)
+        _list = sample(_list, sample_size)
+    return _list
+
+
+def create_text_scatter_plots(texts, labels,  _vec, n_dimensions=2, dim_reduction=True, layout=None):
+    assert n_dimensions in (2, 3)
+    texts = np.asarray(texts)
+
+    pipeline = [_vec]
+    if dim_reduction:
+        pipeline.extend([
+            TruncatedSVD(50),
+            Normalizer(copy=False)
+        ])
+    pipeline.append(TSNE(n_components=n_dimensions, random_state=0))
+    pipeline = make_pipeline(*pipeline)
+
+    dim_names = ('x', 'y', 'z')
+    X = pipeline.fit_transform(texts)
+    plotly_scatter_class = go.Scatter if n_dimensions == 2 else go.Scatter3d
+
+    out = Output()
+    fig = go.FigureWidget()
+
+    for label in labels.unique():
+        ix = labels == label
+        X_label = X[ix]
+        X_dims_named = dict(zip(dim_names, X_label.T))
+        fig.add_trace(plotly_scatter_class(
+            **X_dims_named,
+            mode='markers',
+            marker=dict(
+                size=10,
+                symbol='circle',
+                opacity=0.8
+            ),
+            name=label,
+        ))
+
+        scatter = fig.data[-1]
+        scatter.on_click(_create_scatter_on_click(texts[ix], out))
+
+    _layout = dict(margin=dict(l=0, r=0, b=0, t=0))
+    if layout is not None:
+        _layout.update(layout)
+    fig.update_layout(**_layout)
+
+    return VBox([fig, out])
+
+
+def _create_scatter_on_click(texts, out):
+    def _scatter_on_click(trace, points, state):
+        ix = points.point_inds
+        if ix:
+            out.clear_output()
+            with out:
+                print(points.trace_name)
+                print(texts[ix[0]])
+    return _scatter_on_click
