@@ -237,6 +237,20 @@ def predict_with_logistic_func(w, X):
     return (logistic_func(w, X) > .5).astype(int)
 
 
+def create_scatter_plot_fig(values_2d, colors=None, layout=None):
+    marker = dict(size=10, line_width=1, color=_rgb_to_plotly_color(COLOR_GRAY))
+    if colors is not None:
+        marker["color"] = colors
+    x, y = values_2d.T
+    data = [
+        go.Scatter(x=x, y=y, mode="markers", marker=marker)
+    ]
+    _layout = {}
+    if layout is not None:
+        _layout.update(layout)
+    return go.Figure(data=data, layout=_layout)
+
+
 def create_confusion_matrix_fig(labels, labels_pred, colorscale='Greens'):
     """
     Create a confusion matrix figure with Plotly
