@@ -44,6 +44,10 @@ lab:
 	$(ACTIVATE) $(ENV_NAME) && jupyter lab
 
 
+lab:
+	$(ACTIVATE) $(ENV_NAME) && jupyter notebook
+
+
 notebooks:
 	$(ACTIVATE) $(ENV_NAME) && jupyter notebooks
 
