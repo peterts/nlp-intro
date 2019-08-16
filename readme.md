@@ -75,3 +75,8 @@ script for å laste ned disse, men per nå er du nødt til å laste dem ned selv
 Linker til de aktuelle filene, og hvor de skal lagres er tilgjengelig
 der de brukes i presentasjonen.
  
+ # Annen kode
+ 
+ Repoet inneholder også mye kode som kan være nyttig for andre prosjekter. Disse finner du i mappen
+ ```nlp_intro```. Stort sett alt som er her brukes i presentasjonen, så om du lurer hva en modul
+ eller funksjon brukes til (og jeg ikke har dokumentert dette) - sjekk presentasjonen.
